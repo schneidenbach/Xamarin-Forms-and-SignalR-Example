@@ -38,7 +38,7 @@ namespace XamarinSignalRExample
 				listView.AddText("Me: " + message);
 			};
 
-			SignalRClient.MessageReceived += (username, message) =>{
+			SignalRClient.OnMessageReceived += (username, message) =>{
 				listView.AddText(username + ": " + message);
 			};
 		}
