@@ -1,10 +1,12 @@
 ﻿using System;
 using Microsoft.AspNet.SignalR.Client;
 using System.Threading.Tasks;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 namespace XamarinSignalRExample
 {
-	public class SignalRClient
+	public class SignalRClient : INotifyPropertyChanged
 	{
 		private HubConnection Connection;
 		private IHubProxy ChatHubProxy;
@@ -16,7 +18,11 @@ namespace XamarinSignalRExample
 		{
 			Connection = new HubConnection(url);
 
-			ChatHubProxy = Connection.CreateHubProxy("chat");
+			Connection.StateChanged += (StateChange obj) => {
+				OnPropertyChanged("ConnectionState");
+			};
+
+			ChatHubProxy = Connection.CreateHubProxy("Chat");
 			ChatHubProxy.On<string, string>("MessageReceived", (username, text) => {
 				OnMessageReceived?.Invoke(username, text);
 			});
@@ -24,7 +30,7 @@ namespace XamarinSignalRExample
 
 		public void SendMessage(string username, string text)
 		{
-
+			ChatHubProxy.Invoke ("SendMessage", username, text);
 		}
 
 		public Task Start()
@@ -32,12 +38,30 @@ namespace XamarinSignalRExample
 			return Connection.Start();
 		}
 
+		public bool IsConnectedOrConnecting {
+			get {
+				return Connection.State != ConnectionState.Disconnected;
+			}
+		}
+
+		public ConnectionState ConnectionState { get { return Connection.State; } }
+
 		public static async Task<SignalRClient> CreateAndStart(string url)
 		{
 			var client = new SignalRClient(url);
 			await client.Start();
 			return client;
 		}
+
+		public event PropertyChangedEventHandler PropertyChanged;
+
+		protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+		{
+			var handler = PropertyChanged;
+			if (handler != null)
+				handler (this, new PropertyChangedEventArgs (propertyName));
+		}
+
 	}
 }
 
